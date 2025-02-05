@@ -2,21 +2,21 @@ library(shiny)
 library(dplyr)
 library(lubridate)
 
-# Define the folder path where flight logs are stored
-AIRDATfolderpath <- "D:/Gal2023_Drone/Airdata_UAV_logs/20230201_flight_logs/"
 
-# Read all CSV files and merge into a single dataframe
-tmp.files <- list.files(path = AIRDATfolderpath, pattern = "*.csv", full.names = TRUE)
-df_list <- lapply(tmp.files, read.csv)
-d <- bind_rows(df_list)
+# Read in flight log data from FLight Reader
+d<- read.csv("C:/Users/balae/Documents/dji_mini_measurement_error/Raw_Data/FlightReader_Flight_logs.csv", header = T)
 
-# Convert and arrange data
-d$datetime_utc <- ymd_hms(d$datetime.utc., tz = "UTC")
-d$datetime_utc6 <- with_tz(d$datetime_utc, "Etc/GMT+6")
+d$GIMBAL.pitch <- as.numeric(d$GIMBAL.pitch)
+
+d$datetime_utc6 <- ymd_hms(d$datetime_utc6, tz = "Etc/GMT+6")
 
 d <- d %>%
-  arrange(datetime_utc6, time.millisecond.) %>%
-  select(time.millisecond., datetime_utc6, height_above_takeoff.feet., gimbal_pitch.degrees., gimbal_roll.degrees.)
+  arrange(datetime_utc6, OSD.flyTime..s.)
+
+#keep only the first record of each second
+d <- d %>%
+  distinct(datetime_utc6, .keep_all = TRUE)
+
 
 # Define the Shiny UI
 ui <- fluidPage(
@@ -53,7 +53,8 @@ server <- function(input, output) {
     # Filter the data for the closest timestamp match
     out <- d %>%
       filter(datetime_utc6 == snapshot_datetime) %>%
-      select(datetime_utc6, gimbal_pitch.degrees., height_above_takeoff.feet.)
+      select(datetime_utc6, GIMBAL.pitch, OSD.height..m.)
+  
     
     # Return the first matching row (if exists)
     if (nrow(out) > 0) {
