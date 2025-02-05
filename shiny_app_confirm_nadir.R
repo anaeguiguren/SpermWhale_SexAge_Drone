@@ -25,7 +25,7 @@ ui <- fluidPage(
   sidebarLayout(
     sidebarPanel(
       textInput("video_file", "Enter Video File Name:", "Gal2023_DJIMini2_20230201_091905.MP4"),
-      numericInput("snapshot_time", "Enter Snapshot Time (seconds):", value = 220.854, min = 0, step = 0.1),
+      textInput("snapshot_time", "Enter Snapshot Time (mm:ss):", value = "03:40"),
       actionButton("submit", "Find Gimbal Angle")
     ),
     
@@ -42,7 +42,21 @@ server <- function(input, output) {
     
     # Extract date and time from the video file name
     video_file <- input$video_file
-    snapshot_time <- input$snapshot_time
+    
+    # Convert mm:ss to seconds
+    parse_mmss <- function(time_str) {
+      parts <- unlist(strsplit(time_str, ":"))
+      if (length(parts) != 2) return(NA)  # Return NA if format is incorrect
+      minutes <- as.numeric(parts[1])
+      seconds <- as.numeric(parts[2])
+      if (is.na(minutes) || is.na(seconds)) return(NA)  # Handle non-numeric cases
+      return(minutes * 60 + seconds)
+    }
+    
+    snapshot_time <- parse_mmss(input$snapshot_time)
+    if (is.na(snapshot_time)) {
+      return(data.frame(Message = "Invalid mm:ss format. Use MM:SS (e.g., 03:40)"))
+    }
     
     date_part <- unlist(strsplit(video_file, "_"))[3]  
     time_part <- gsub(".MP4", "", unlist(strsplit(video_file, "_"))[4])

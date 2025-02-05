@@ -2,36 +2,19 @@ library(shiny)
 library(dplyr)
 library(lubridate)
 
-# Define the folder path where flight logs are stored
-FLIGHTREADfolderpath <- "D:/Gal2023_Drone/FlightReader_logs/"
-
-# Read all CSV files and merge into a single dataframe
-tmp.files <- list.files(path = FLIGHTREADfolderpath, pattern = "*.csv", full.names = TRUE, recursive = T)
-df_list <- lapply(tmp.files, read.csv)
-df_list <- lapply(df_list, function(df) {
-  df %>% mutate(across(everything(), as.character))
-})
-
-
-
-
-d <- bind_rows(df_list)
-
-# Convert datetime to proper format
-d$datetime_utc6 <- mdy_hms(d$CUSTOM.updateDateTime24, tz = "Etc/GMT+6")
-
-# Arrange data by timestamp
-d <- d %>%
-  arrange(datetime_utc6, OSD.flyTime..s.) %>%
-  select(OSD.flyTime..s., datetime_utc6, OSD.height..m., GIMBAL.pitch)
-
-
-
-d <- d %>%
-  distinct(datetime_utc6, .keep_all = TRUE)
+# Read in flight log data from FLight Reader
+d<- read.csv("C:/Users/balae/Documents/dji_mini_measurement_error/Raw_Data/FlightReader_Flight_logs.csv", header = T)
 
 d$GIMBAL.pitch <- as.numeric(d$GIMBAL.pitch)
 
+d$datetime_utc6 <- ymd_hms(d$datetime_utc6, tz = "Etc/GMT+6")
+
+d <- d %>%
+  arrange(datetime_utc6, OSD.flyTime..s.)
+
+#keep only the first record of each second
+d <- d %>%
+  distinct(datetime_utc6, .keep_all = TRUE)
 
 # Define UI
 ui <- fluidPage(
@@ -86,15 +69,26 @@ server <- function(input, output) {
     
     # Filter only time intervals within 0 - 720 seconds
     result_table <- result_table %>%
-      filter(start_time_sec >= 0, end_time_sec <= 720)
+      filter(start_time_sec >= 0, end_time_sec <= 900)
     
     # If no valid intervals, return a message
     if (nrow(result_table) == 0) {
-      return(data.frame(Message = "No intervals within 0-720s found"))
+      return(data.frame(Message = "No intervals within 0-900 found"))
     }
+    
+    
+    
+    # Convert seconds to mm:ss format
+    result_table <- result_table %>%
+      mutate(
+        start_time = sprintf("%02d:%02d", start_time_sec %/% 60, start_time_sec %% 60),
+        end_time = sprintf("%02d:%02d", end_time_sec %/% 60, end_time_sec %% 60)
+      ) %>%
+      select(start_time, end_time)  # Keep only formatted columns
     
     return(result_table)
   })
+  
   
   # Render result table
   output$result_table <- renderTable({
