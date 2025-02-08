@@ -51,6 +51,7 @@ getMorphoMetrix  <- function(ROOTfolderpath){
     
     #check if HF and fref fields exist:
     HF.exists <- any(a$Object == "HF")
+    HD.exists <- any(a$Object == "HD")
     fref.exists <- any(a$Object == "fref")
     
     
@@ -60,7 +61,7 @@ getMorphoMetrix  <- function(ROOTfolderpath){
                             ind = as.numeric(a$Value[which(a$Object=="Image ID")]),
                             TL.px = as.numeric(a$Value[which(a$Object=="TL" & a$Value_unit == "Pixels")]),
                             HF.px =  ifelse(HF.exists, as.numeric(a$Value[which(a$Object == "HF" & a$Value_unit == "Pixels")]), NA),
-                            HD.px = as.numeric(a$Value[which(a$Object=="HD" & a$Value_unit == "Pixels")]),
+                            HD.px = ifelse(HD.exists, as.numeric(a$Value[which(a$Object == "HD" & a$Value_unit == "Pixels")]), NA),
                             notes = a$Value[which(a$Object=="Notes")])
     
     morpho.output <- rbind(morpho.output, tmp.table)
