@@ -25,7 +25,7 @@ morpho.output<-morpho.output%>% mutate(
   video.file = substr(imageName, 1, 32)
 )
 
-morpho.output %>% mutate(
+morpho.output <- morpho.output %>% mutate(
   video.ID <- paste(video.file, ind, sep = "_")
 )
 
@@ -71,7 +71,7 @@ data <- rbind(matrix(rnorm(100, mean = 0, sd = 1), ncol = 2),
 
 
 
-data <- cbind(morpho.output$TL.m, morpho.output$ratio.HF)
+data <- cbind(morpho.output$TL.m, morpho.output$ratio.HD)
 
 data <- data[complete.cases(data),]
 
