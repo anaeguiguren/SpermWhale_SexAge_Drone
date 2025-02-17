@@ -1,10 +1,9 @@
 
-
-
+# 1. reading in data ------
 #extracts raw data from Morphometrix generated csvs. 
 getMorphoMetrix  <- function(ROOTfolderpath){
   require(dbplyr); require(dplyr)
-  #' @title compMorphometrix
+  #' @title getMorphoMetrix
   #' @description compile the csv outputs from Morphometrix folder 
   #' @param ROOTfolderpath 	a character vector of full path names to the folder where the csv outputs are located  
   
@@ -71,11 +70,62 @@ getMorphoMetrix  <- function(ROOTfolderpath){
   
 } 
 
+#2. obtaining image width from original images ----
+getImageWidth <- function(ROOTfolderpath, data){
+  require(exiftoolr)
+  #' @title getImageWidth
+  #' @description extract image width from original snapshots
+  #' @param ROOTfolderpath 	a character vector of full path names to the folder where the csv outputs are located  
+  #' @param data 	a data.frame output from getMorphoMetrix 
+  
+  
+  #ROOTfolderpath <- "D:/Gal2023_Drone/Galapagos2023_Drone_Snapshots/SpermWhale_AgeSex_Snapshots/"
+  #data = morpho.output
+  
+  FromFiles <- list.files(path = ROOTfolderpath, full.names = TRUE, recursive 
+                          = T, pattern = ".png")
+  FromFiles<-FromFiles[-grep("measurements", FromFiles)] #keep only original pictures
+  FromFiles<-FromFiles[-grep("csv", FromFiles)] #keep only original pictures
+  
+  #read image sizes: 
+  out <- exif_read(FromFiles, 'ImageWidth')
+  
+  # Identify any missing data
+  if (any(is.na(out$ImageWidth))) {
+    missing_files <- FromFiles[is.na(out$ImageWidth)]
+    cat("Files with missing EXIF data:\n")
+    print(missing_files)
+  }
+  
+  # Create the data frame with the available data
+  img_widths <- data.frame(
+    image_path  = out$SourceFile,
+    file_name   = basename(out$SourceFile),
+    image_width = out$ImageWidth
+  )
+  # merge with output from morphometrix:
+  
+  data$file_name <- basename(data$imageName)
+  
+  data <-left_join(data, img_widths, by = "file_name", relationship = 'many-to-many')
+  
+  #cleanup: 
+  data <- data %>% select(
+    file_name, ind, altitude.raw, TL.px, HF.px, HD.px, image_width, notes, image_path
+  )
+  
+  
+  return(data)
+  
+}
+
+#data<-getImageWidth(ROOTfolderpath, data= morpho.output)
 
 
 
 
-#corrects subtitle altitude to true altitude above sea-level (ASL) based on launch height
+
+#2. corrects subtitle altitude to true altitude above sea-level (ASL) based on launch height----
 altitudeASL <- function(boat_height =  1.03 - 0.24, 
                         launch.chest = 1.4, 
                         camera.height = 0.045, 

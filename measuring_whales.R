@@ -1,6 +1,5 @@
 # Measure and graph whales:
-source("functions.R")
-
+source("R/functions.R")
 
 #1. read in morphometrix data -----
 morpho.output <- getMorphoMetrix(ROOTfolderpath = "D:/Gal2023_Drone/Galapagos2023_Drone_Snapshots/SpermWhale_AgeSex_Snapshots/")
@@ -17,7 +16,8 @@ morpho.output<- morpho.output %>% mutate(
   HD.m = measureWhales(image.width = 1920, altitude = altitudeASL(altitude.raw = altitude.raw),length.pixels = HD.px), #estimate length in meters
   HF.m = measureWhales(image.width = 1920, altitude = altitudeASL(altitude.raw = altitude.raw),length.pixels = HF.px),
   ratio.HD = HD.px/TL.px, # ratio using nose-dorsal fin measure
-  ratio.HF = HF.px/TL.px # ratio using nose- flipper measure
+  ratio.HF = HF.px/TL.px, # ratio using nose- flipper measure
+  ratio.DF = HF.px/HD.px # ratio nose-flipper to nose DF
 )
 
 # 3. assign whales ID's based on flight and ID number ----
@@ -48,6 +48,10 @@ ggplot(data = morpho.output, aes(x = TL.m, y = ratio.HF))+
 
 
 
+
+
+ggplot(data = morpho.output, aes(x = TL.m, y = ratio.DF))+
+  geom_point()
 
 
 
