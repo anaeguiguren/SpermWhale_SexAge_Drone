@@ -25,7 +25,8 @@ getMorphoMetrix  <- function(ROOTfolderpath){
   
   #make empty data table to populate
   #empty flightlog
-  morpho.output <- data.frame(imagePath = character(), 
+  morpho.output <- data.frame(textfile = character(), 
+                              imagePath = character(), 
                               videoFile = character(),
                               timeStamp = numeric(),
                               altitude.raw = numeric(),
@@ -54,7 +55,17 @@ getMorphoMetrix  <- function(ROOTfolderpath){
     fref.exists <- any(a$Object == "fref")
     
     
-    tmp.table <- data.frame(imageName = basename(a$Value[which(a$Object=="Image Path")]), 
+    object_counts <- table(a$Object, a$Value_unit)
+    
+    if (any(object_counts>1)){
+      stop(paste("A variable has been entered twice in file",
+                 basename(tmp.files[i])))
+    }
+    
+
+    
+    tmp.table <- data.frame(textfile = basename(tmp.files[i]),
+                            imageName = basename(a$Value[which(a$Object=="Image Path")]), 
                             imagePath = a$Value[which(a$Object=="Image Path")], 
                             altitude.raw = as.numeric(a$Value[which(a$Object=="Altitude")]),
                             ind = as.numeric(a$Value[which(a$Object=="Image ID")]),
@@ -119,9 +130,34 @@ getImageWidth <- function(ROOTfolderpath, data){
   
 }
 
-#data<-getImageWidth(ROOTfolderpath, data= morpho.output)
 
+#3. gets altitude directly from srt files ----
 
+getSrtAltitude <- function(data){
+  #read in all flight srt data
+  require(stringr)
+  drone_srt_files <- read.csv("Input_Data/Gal2023_Drone_Flight_Logs_srt.csv", header = T)
+  
+  
+  
+  
+  #obtain snapshot file type: 
+  data <- data %>% 
+    mutate(  # identify vlc and other file snapshot types
+      type = ifelse(str_detect(file_name, "vlc"), "vlc", "boris")
+    )
+  #figure out how to estimate these separately!
+    
+    
+    mutate(
+    # Extract date and time from the video file name
+    date_part = lapply(file_name, function(x){unlist(strsplit(x, "_"))[3]}), 
+    time_part = lapply(file_name, function(x){unlist(strsplit(x, "_"))[4]}), 
+    ss_part = lapply(file_name, function(x){unlist(strsplit(x, "_"))[5]})
+    )
+   
+  
+}
 
 
 
@@ -144,6 +180,9 @@ measureWhales<- function(image.width, altitude, length.pixels){
   return(length)
 }
 
+
+
+#apply correction 
 
 #estimate ratios 
 
